@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { FaArrowLeft, FaSave, FaSpinner, FaPlus, FaTrash, FaUpload, FaLightbulb, FaCode, FaImage, FaTimes, FaLink } from 'react-icons/fa';
-import { topicAPI, uploadAPI, courseAPI } from '../services/api';
+import { topicAPI, uploadAPI, courseAPI, BACKEND_URL } from '../services/api';
 
 // Available programming languages
 const PROGRAMMING_LANGUAGES = [
@@ -512,7 +512,7 @@ What should the student build? What are the requirements?"
                 {formData.codingPractice.referenceImage ? (
                   <div className="relative">
                     <img
-                      src={`http://localhost:5000${formData.codingPractice.referenceImage}`}
+                      src={`${BACKEND_URL}${formData.codingPractice.referenceImage}`}
                       alt="Reference"
                       className="w-full max-h-64 object-contain bg-dark-bg rounded-lg border border-dark-secondary"
                     />

@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const API_URL = 'https://nagasai-creator-backend-2.onrender.com/api';
+export const BACKEND_URL = 'https://nagasai-creator-backend-2.onrender.com';
+const API_URL = `${BACKEND_URL}/api`;
 
 const api = axios.create({
   baseURL: API_URL,
