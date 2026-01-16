@@ -1,0 +1,45 @@
+@import "tailwindcss";
+
+@theme {
+  --color-dark-bg: #0f0f0f;
+  --color-dark-card: #1a1a2e;
+  --color-dark-sidebar: #16213e;
+  --color-dark-accent: #e94560;
+  --color-dark-secondary: #0f3460;
+  --color-dark-text: #eaeaea;
+  --color-dark-muted: #a0a0a0;
+}
+
+body {
+  background-color: var(--color-dark-bg);
+  color: var(--color-dark-text);
+  min-height: 100vh;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  margin: 0;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1a1a2e;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #e94560;
+  border-radius: 4px;
+}
+
+.bg-dark-bg { background-color: var(--color-dark-bg); }
+.bg-dark-card { background-color: var(--color-dark-card); }
+.bg-dark-sidebar { background-color: var(--color-dark-sidebar); }
+.bg-dark-accent { background-color: var(--color-dark-accent); }
+.bg-dark-secondary { background-color: var(--color-dark-secondary); }
+.text-dark-text { color: var(--color-dark-text); }
+.text-dark-muted { color: var(--color-dark-muted); }
+.text-dark-accent { color: var(--color-dark-accent); }
+.border-dark-secondary { border-color: var(--color-dark-secondary); }
+.border-dark-accent { border-color: var(--color-dark-accent); }
+.hover\:bg-dark-accent:hover { background-color: var(--color-dark-accent); }
+.hover\:bg-dark-secondary:hover { background-color: var(--color-dark-secondary); }
