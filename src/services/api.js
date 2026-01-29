@@ -6,8 +6,10 @@ const API_URL = `${BACKEND_URL}/api`;
 const api = axios.create({
   baseURL: API_URL,
   headers: {
-    'Content-Type': 'application/json'
-  }
+    'Content-Type': 'application/json',
+    'Accept-Encoding': 'gzip, deflate, br'
+  },
+  timeout: 30000
 });
 
 // Handle response errors
@@ -19,6 +21,15 @@ api.interceptors.response.use(
   }
 );
 
+// Helper to extract data from paginated responses
+const extractData = (response) => {
+  const data = response.data;
+  // Handle paginated response format
+  if (data && data.courses) return { ...response, data: data.courses, pagination: data.pagination };
+  if (data && data.topics) return { ...response, data: data.topics, pagination: data.pagination };
+  return response;
+};
+
 // Auth APIs
 export const authAPI = {
   login: (credentials) => api.post('/auth/login', credentials),
@@ -28,19 +39,28 @@ export const authAPI = {
 
 // Course APIs
 export const courseAPI = {
-  getAll: () => api.get('/courses'),
+  getAll: (options = {}) => {
+    const { page = 1, limit = 100 } = options;
+    return api.get(`/courses?page=${page}&limit=${limit}`).then(extractData);
+  },
   getById: (id) => api.get(`/courses/${id}`),
   create: (data) => api.post('/courses', data),
   update: (id, data) => api.put(`/courses/${id}`, data),
   delete: (id) => api.delete(`/courses/${id}`),
-  getTopics: (id) => api.get(`/courses/${id}/topics`),
+  getTopics: (id, options = {}) => {
+    const { page = 1, limit = 200 } = options;
+    return api.get(`/courses/${id}/topics?page=${page}&limit=${limit}`).then(extractData);
+  },
   getStats: () => api.get('/courses/stats'),
   reorder: (courses) => api.put('/courses/reorder', { courses })
 };
 
 // Topic APIs
 export const topicAPI = {
-  getAll: () => api.get('/topics'),
+  getAll: (options = {}) => {
+    const { page = 1, limit = 100 } = options;
+    return api.get(`/topics?page=${page}&limit=${limit}`).then(extractData);
+  },
   getById: (id) => api.get(`/topics/${id}`),
   create: (data) => api.post('/topics', data),
   update: (id, data) => api.put(`/topics/${id}`, data),
