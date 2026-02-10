@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-export const BACKEND_URL = 'https://nagasai-creator-backend-2.onrender.com';
+export const BACKEND_URL = 'http://localhost:5000';
 const API_URL = `${BACKEND_URL}/api`;
 
 const api = axios.create({
@@ -10,6 +10,15 @@ const api = axios.create({
     'Accept-Encoding': 'gzip, deflate, br'
   },
   timeout: 30000
+});
+
+// Add auth token to requests
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('adminToken');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
 });
 
 // Handle response errors
@@ -24,7 +33,6 @@ api.interceptors.response.use(
 // Helper to extract data from paginated responses
 const extractData = (response) => {
   const data = response.data;
-  // Handle paginated response format
   if (data && data.courses) return { ...response, data: data.courses, pagination: data.pagination };
   if (data && data.topics) return { ...response, data: data.topics, pagination: data.pagination };
   return response;

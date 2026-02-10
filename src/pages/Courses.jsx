@@ -31,7 +31,7 @@ const Courses = () => {
 
     try {
       await courseAPI.delete(id);
-      setCourses(courses.filter((c) => c._id !== id));
+      setCourses(courses.filter((c) => c.id !== id));
     } catch (error) {
       console.error('Failed to delete course:', error);
       alert('Failed to delete course');

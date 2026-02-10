@@ -1,7 +1,10 @@
 import { NavLink } from 'react-router-dom';
-import { FaHome, FaBook } from 'react-icons/fa';
+import { FaHome, FaBook, FaSignOutAlt } from 'react-icons/fa';
+import { useAuth } from '../../context/AuthContext';
 
 const Sidebar = () => {
+  const { logout, admin } = useAuth();
+
   const navItems = [
     { path: '/', icon: FaHome, label: 'Dashboard' },
     { path: '/courses', icon: FaBook, label: 'Courses' }
@@ -45,9 +48,18 @@ const Sidebar = () => {
         </ul>
       </nav>
 
-      {/* Footer */}
-      <div className="p-4 border-t border-dark-secondary">
-        <p className="text-xs text-dark-muted text-center">Naga sai LMS Admin</p>
+      {/* Footer with Logout */}
+      <div className="p-4 border-t border-dark-secondary space-y-3">
+        {admin && (
+          <p className="text-xs text-dark-muted text-center truncate">{admin.email}</p>
+        )}
+        <button
+          onClick={logout}
+          className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+        >
+          <FaSignOutAlt />
+          Logout
+        </button>
       </div>
     </aside>
   );

@@ -35,7 +35,7 @@ const Topics = () => {
 
     try {
       await topicAPI.delete(topicId);
-      setTopics(topics.filter((t) => t._id !== topicId));
+      setTopics(topics.filter((t) => t.id !== topicId));
     } catch (error) {
       console.error('Failed to delete topic:', error);
       alert('Failed to delete topic');
