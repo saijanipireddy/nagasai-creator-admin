@@ -45,7 +45,9 @@ const TopicForm = () => {
       imageLinks: [],
       starterCode: '',
       expectedOutput: '',
-      hints: []
+      hints: [],
+      testScript: '',
+      testCases: [],
     },
     isPublished: false
   });
@@ -71,7 +73,7 @@ const TopicForm = () => {
     setLoading(true);
     try {
       const { data } = await topicAPI.getById(topicId);
-      const codingPracticeData = data.codingPractice || { language: 'javascript', title: '', description: '', referenceImage: '', imageLinks: [], starterCode: '', expectedOutput: '', hints: [] };
+      const codingPracticeData = data.codingPractice || { language: 'javascript', title: '', description: '', referenceImage: '', imageLinks: [], starterCode: '', expectedOutput: '', hints: [], testScript: '', testCases: [] };
       setFormData({
         title: data.title || '',
         videoUrl: data.videoUrl || '',
@@ -99,7 +101,7 @@ const TopicForm = () => {
         ...formData,
         courseId,
         // Only include codingPractice if enabled, otherwise send empty object
-        codingPractice: codingPracticeEnabled ? formData.codingPractice : { language: 'javascript', title: '', description: '', referenceImage: '', imageLinks: [], starterCode: '', expectedOutput: '', hints: [] }
+        codingPractice: codingPracticeEnabled ? formData.codingPractice : { language: 'javascript', title: '', description: '', referenceImage: '', imageLinks: [], starterCode: '', expectedOutput: '', hints: [], testScript: '', testCases: [] }
       };
       if (isEditing) {
         await topicAPI.update(topicId, payload);
@@ -229,6 +231,39 @@ const TopicForm = () => {
       codingPractice: {
         ...prev.codingPractice,
         hints: prev.codingPractice.hints.map((h, i) => i === index ? value : h)
+      }
+    }));
+  };
+
+  // Test cases handlers (for non-web languages)
+  const addTestCase = () => {
+    setFormData((prev) => ({
+      ...prev,
+      codingPractice: {
+        ...prev.codingPractice,
+        testCases: [...(prev.codingPractice.testCases || []), { input: '', expectedOutput: '' }]
+      }
+    }));
+  };
+
+  const removeTestCase = (index) => {
+    setFormData((prev) => ({
+      ...prev,
+      codingPractice: {
+        ...prev.codingPractice,
+        testCases: prev.codingPractice.testCases.filter((_, i) => i !== index)
+      }
+    }));
+  };
+
+  const updateTestCase = (index, field, value) => {
+    setFormData((prev) => ({
+      ...prev,
+      codingPractice: {
+        ...prev.codingPractice,
+        testCases: prev.codingPractice.testCases.map((tc, i) =>
+          i === index ? { ...tc, [field]: value } : tc
+        )
       }
     }));
   };
@@ -625,6 +660,107 @@ What should the student build? What are the requirements?"
                   placeholder="What output should the correct solution produce?"
                 />
               </div>
+
+              {/* Test Script (for web languages: html, css, javascript) */}
+              {['html', 'css', 'javascript'].includes(formData.codingPractice.language) && (
+                <div>
+                  <label className="block text-sm font-medium mb-2 flex items-center gap-2">
+                    <FaCode className="text-green-400" />
+                    Test Script
+                    <span className="text-xs text-dark-muted">(JS assertions that run after student's code)</span>
+                  </label>
+                  <textarea
+                    value={formData.codingPractice.testScript || ''}
+                    onChange={(e) => updateCodingPractice('testScript', e.target.value)}
+                    rows={10}
+                    className="w-full px-4 py-3 bg-dark-bg border border-dark-secondary rounded-lg focus:outline-none focus:border-green-500 resize-none font-mono text-sm"
+                    placeholder={`// This JS runs inside the student's iframe after their code.
+// Use DOM queries to check their work.
+// Push 'PASS' or 'FAIL: reason' to results array.
+
+const results = [];
+
+const btn = document.querySelector('button');
+results.push(btn ? 'PASS' : 'FAIL: No <button> found');
+results.push(btn?.textContent.trim() === 'Click Me'
+  ? 'PASS' : 'FAIL: Button text should be "Click Me"');
+
+const color = btn ? getComputedStyle(btn).backgroundColor : '';
+results.push(color === 'rgb(255, 0, 0)'
+  ? 'PASS' : 'FAIL: Button background should be red');
+
+// REQUIRED: send results back
+console.log('TEST_RESULTS:' + JSON.stringify(results));`}
+                  />
+                  <p className="text-xs text-dark-muted mt-1">
+                    Must end with: <code className="text-green-400">console.log('TEST_RESULTS:' + JSON.stringify(results))</code>
+                  </p>
+                </div>
+              )}
+
+              {/* Test Cases (for non-web languages) */}
+              {!['html', 'css', 'javascript'].includes(formData.codingPractice.language) && (
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-sm font-medium flex items-center gap-2">
+                      <FaCode className="text-green-400" />
+                      Test Cases
+                      <span className="text-xs text-dark-muted">(Input/Output pairs — validated server-side)</span>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={addTestCase}
+                      className="flex items-center gap-1 px-3 py-1 bg-dark-secondary rounded-lg hover:bg-dark-secondary/80 transition-colors text-sm"
+                    >
+                      <FaPlus className="text-xs" /> Add Test Case
+                    </button>
+                  </div>
+                  {formData.codingPractice.testCases && formData.codingPractice.testCases.length > 0 ? (
+                    <div className="space-y-3">
+                      {formData.codingPractice.testCases.map((tc, index) => (
+                        <div key={index} className="p-3 bg-dark-bg rounded-lg">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-green-400 text-sm font-medium">Test #{index + 1}</span>
+                            <button
+                              type="button"
+                              onClick={() => removeTestCase(index)}
+                              className="p-1.5 text-red-500 hover:bg-red-500/20 rounded-lg transition-colors"
+                            >
+                              <FaTrash className="text-sm" />
+                            </button>
+                          </div>
+                          <div className="space-y-2">
+                            <div>
+                              <label className="text-xs text-dark-muted mb-1 block">Input (stdin)</label>
+                              <textarea
+                                value={tc.input}
+                                onChange={(e) => updateTestCase(index, 'input', e.target.value)}
+                                rows={2}
+                                className="w-full px-3 py-2 bg-dark-card border border-dark-secondary rounded-lg focus:outline-none focus:border-green-500 font-mono text-sm resize-none"
+                                placeholder="e.g. 5&#10;1 2 3 4 5"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-xs text-dark-muted mb-1 block">Expected Output</label>
+                              <textarea
+                                value={tc.expectedOutput}
+                                onChange={(e) => updateTestCase(index, 'expectedOutput', e.target.value)}
+                                rows={2}
+                                className="w-full px-3 py-2 bg-dark-card border border-dark-secondary rounded-lg focus:outline-none focus:border-green-500 font-mono text-sm resize-none"
+                                placeholder="e.g. 5 4 3 2 1"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-dark-muted text-sm text-center py-3 bg-dark-bg rounded-lg">
+                      No test cases added. Add input/output pairs for server-side validation. Falls back to Expected Output if empty.
+                    </p>
+                  )}
+                </div>
+              )}
 
               {/* Hints */}
               <div>
