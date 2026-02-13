@@ -1,13 +1,20 @@
-
+import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import AdminLayout from './components/Layout/AdminLayout';
-import Dashboard from './pages/Dashboard';
-import Courses from './pages/Courses';
-import CourseForm from './pages/CourseForm';
-import Topics from './pages/Topics';
-import TopicForm from './pages/TopicForm';
 import Login from './pages/Login';
+
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const Courses = lazy(() => import('./pages/Courses'));
+const CourseForm = lazy(() => import('./pages/CourseForm'));
+const Topics = lazy(() => import('./pages/Topics'));
+const TopicForm = lazy(() => import('./pages/TopicForm'));
+
+const Spinner = () => (
+  <div className="min-h-screen bg-dark-bg flex items-center justify-center">
+    <div className="animate-spin w-8 h-8 border-2 border-dark-accent border-t-transparent rounded-full" />
+  </div>
+);
 
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
@@ -41,13 +48,13 @@ function App() {
               </ProtectedRoute>
             }
           >
-            <Route index element={<Dashboard />} />
-            <Route path="courses" element={<Courses />} />
-            <Route path="courses/new" element={<CourseForm />} />
-            <Route path="courses/:id/edit" element={<CourseForm />} />
-            <Route path="courses/:courseId/topics" element={<Topics />} />
-            <Route path="courses/:courseId/topics/new" element={<TopicForm />} />
-            <Route path="courses/:courseId/topics/:topicId/edit" element={<TopicForm />} />
+            <Route index element={<Suspense fallback={<Spinner />}><Dashboard /></Suspense>} />
+            <Route path="courses" element={<Suspense fallback={<Spinner />}><Courses /></Suspense>} />
+            <Route path="courses/new" element={<Suspense fallback={<Spinner />}><CourseForm /></Suspense>} />
+            <Route path="courses/:id/edit" element={<Suspense fallback={<Spinner />}><CourseForm /></Suspense>} />
+            <Route path="courses/:courseId/topics" element={<Suspense fallback={<Spinner />}><Topics /></Suspense>} />
+            <Route path="courses/:courseId/topics/new" element={<Suspense fallback={<Spinner />}><TopicForm /></Suspense>} />
+            <Route path="courses/:courseId/topics/:topicId/edit" element={<Suspense fallback={<Spinner />}><TopicForm /></Suspense>} />
           </Route>
         </Routes>
       </BrowserRouter>
