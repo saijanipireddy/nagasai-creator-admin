@@ -3,6 +3,13 @@ import axios from 'axios';
 export const BACKEND_URL = 'http://localhost:5000';
 const API_URL = `${BACKEND_URL}/api`;
 
+// Resolve file URLs — handles both old local paths (/uploads/...) and new Supabase URLs (https://...)
+export const getFileUrl = (filePath) => {
+  if (!filePath) return '';
+  if (filePath.startsWith('http')) return filePath;
+  return `${BACKEND_URL}${filePath}`;
+};
+
 const api = axios.create({
   baseURL: API_URL,
   headers: {
