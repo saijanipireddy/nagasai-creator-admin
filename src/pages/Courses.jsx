@@ -2,12 +2,14 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { FaPlus, FaEdit, FaTrash, FaEye, FaBook, FaGripVertical, FaArrowRight } from 'react-icons/fa';
 import { courseAPI } from '../services/api';
+import { useToast } from '../components/Toast';
 
 const Courses = () => {
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [draggedIndex, setDraggedIndex] = useState(null);
   const [saving, setSaving] = useState(false);
+  const { addToast } = useToast();
 
   useEffect(() => {
     fetchCourses();
@@ -18,7 +20,7 @@ const Courses = () => {
       const { data } = await courseAPI.getAll();
       setCourses(data);
     } catch (error) {
-      console.error('Failed to fetch courses:', error);
+      addToast('Failed to fetch courses', 'error');
     } finally {
       setLoading(false);
     }
@@ -31,10 +33,10 @@ const Courses = () => {
 
     try {
       await courseAPI.delete(id);
-      setCourses(courses.filter((c) => c.id !== id));
+      setCourses(courses.filter((c) => c._id !== id));
+      addToast('Course deleted successfully', 'success');
     } catch (error) {
-      console.error('Failed to delete course:', error);
-      alert('Failed to delete course');
+      addToast('Failed to delete course', 'error');
     }
   };
 
@@ -78,7 +80,7 @@ const Courses = () => {
       setSaving(true);
       await courseAPI.reorder(newCourses);
     } catch (error) {
-      console.error('Failed to save order:', error);
+      addToast('Failed to save order', 'error');
       // Revert on error
       fetchCourses();
     } finally {

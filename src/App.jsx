@@ -3,6 +3,8 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import AdminLayout from './components/Layout/AdminLayout';
 import Login from './pages/Login';
+import ErrorBoundary from './components/ErrorBoundary';
+import { ToastProvider } from './components/Toast';
 
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Courses = lazy(() => import('./pages/Courses'));
@@ -36,29 +38,33 @@ const ProtectedRoute = ({ children }) => {
 
 function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route
-            path="/"
-            element={
-              <ProtectedRoute>
-                <AdminLayout />
-              </ProtectedRoute>
-            }
-          >
-            <Route index element={<Suspense fallback={<Spinner />}><Dashboard /></Suspense>} />
-            <Route path="courses" element={<Suspense fallback={<Spinner />}><Courses /></Suspense>} />
-            <Route path="courses/new" element={<Suspense fallback={<Spinner />}><CourseForm /></Suspense>} />
-            <Route path="courses/:id/edit" element={<Suspense fallback={<Spinner />}><CourseForm /></Suspense>} />
-            <Route path="courses/:courseId/topics" element={<Suspense fallback={<Spinner />}><Topics /></Suspense>} />
-            <Route path="courses/:courseId/topics/new" element={<Suspense fallback={<Spinner />}><TopicForm /></Suspense>} />
-            <Route path="courses/:courseId/topics/:topicId/edit" element={<Suspense fallback={<Spinner />}><TopicForm /></Suspense>} />
-          </Route>
-        </Routes>
-      </BrowserRouter>
-    </AuthProvider>
+    <ErrorBoundary>
+      <ToastProvider>
+        <AuthProvider>
+          <BrowserRouter>
+            <Routes>
+              <Route path="/login" element={<Login />} />
+              <Route
+                path="/"
+                element={
+                  <ProtectedRoute>
+                    <AdminLayout />
+                  </ProtectedRoute>
+                }
+              >
+                <Route index element={<Suspense fallback={<Spinner />}><Dashboard /></Suspense>} />
+                <Route path="courses" element={<Suspense fallback={<Spinner />}><Courses /></Suspense>} />
+                <Route path="courses/new" element={<Suspense fallback={<Spinner />}><CourseForm /></Suspense>} />
+                <Route path="courses/:id/edit" element={<Suspense fallback={<Spinner />}><CourseForm /></Suspense>} />
+                <Route path="courses/:courseId/topics" element={<Suspense fallback={<Spinner />}><Topics /></Suspense>} />
+                <Route path="courses/:courseId/topics/new" element={<Suspense fallback={<Spinner />}><TopicForm /></Suspense>} />
+                <Route path="courses/:courseId/topics/:topicId/edit" element={<Suspense fallback={<Spinner />}><TopicForm /></Suspense>} />
+              </Route>
+            </Routes>
+          </BrowserRouter>
+        </AuthProvider>
+      </ToastProvider>
+    </ErrorBoundary>
   );
 }
 

@@ -26,7 +26,7 @@ const Dashboard = () => {
       setStats(statsRes.data);
       setRecentCourses(coursesRes.data.slice(0, 5));
     } catch (error) {
-      console.error('Failed to fetch data:', error);
+      // Error handled silently — UI shows empty state
     } finally {
       setLoading(false);
     }

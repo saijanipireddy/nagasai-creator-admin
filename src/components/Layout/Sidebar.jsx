@@ -26,7 +26,7 @@ const Sidebar = () => {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 p-4">
+      <nav className="flex-1 p-4" aria-label="Admin navigation">
         <ul className="space-y-2">
           {navItems.map((item) => (
             <li key={item.path}>
@@ -56,6 +56,7 @@ const Sidebar = () => {
         <button
           onClick={logout}
           className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+          aria-label="Logout"
         >
           <FaSignOutAlt />
           Logout

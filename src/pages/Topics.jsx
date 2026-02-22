@@ -2,12 +2,14 @@ import { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { FaPlus, FaEdit, FaTrash, FaArrowLeft, FaGripVertical, FaYoutube, FaFilePdf, FaCode } from 'react-icons/fa';
 import { courseAPI, topicAPI } from '../services/api';
+import { useToast } from '../components/Toast';
 
 const Topics = () => {
   const { courseId } = useParams();
   const [course, setCourse] = useState(null);
   const [topics, setTopics] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { addToast } = useToast();
 
   useEffect(() => {
     fetchData();
@@ -22,7 +24,7 @@ const Topics = () => {
       setCourse(courseRes.data);
       setTopics(topicsRes.data);
     } catch (error) {
-      console.error('Failed to fetch data:', error);
+      addToast('Failed to fetch data', 'error');
     } finally {
       setLoading(false);
     }
@@ -35,10 +37,10 @@ const Topics = () => {
 
     try {
       await topicAPI.delete(topicId);
-      setTopics(topics.filter((t) => t.id !== topicId));
+      setTopics(topics.filter((t) => t._id !== topicId));
+      addToast('Topic deleted successfully', 'success');
     } catch (error) {
-      console.error('Failed to delete topic:', error);
-      alert('Failed to delete topic');
+      addToast('Failed to delete topic', 'error');
     }
   };
 

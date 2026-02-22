@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { FaArrowLeft, FaSave, FaSpinner } from 'react-icons/fa';
 import { courseAPI } from '../services/api';
+import { useToast } from '../components/Toast';
 
 const iconOptions = [
   'FaHtml5', 'FaCss3Alt', 'FaJs', 'FaNodeJs', 'FaReact', 'FaPython',
@@ -17,6 +18,7 @@ const CourseForm = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const isEditing = !!id;
+  const { addToast } = useToast();
 
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -48,8 +50,7 @@ const CourseForm = () => {
         isPublished: data.isPublished || false
       });
     } catch (error) {
-      console.error('Failed to fetch course:', error);
-      alert('Failed to load course');
+      addToast('Failed to load course', 'error');
       navigate('/courses');
     } finally {
       setLoading(false);
@@ -68,8 +69,7 @@ const CourseForm = () => {
       }
       navigate('/courses');
     } catch (error) {
-      console.error('Failed to save course:', error);
-      alert('Failed to save course');
+      addToast('Failed to save course', 'error');
     } finally {
       setSaving(false);
     }

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { FaArrowLeft, FaSave, FaSpinner, FaPlus, FaTrash, FaUpload, FaLightbulb, FaCode, FaImage, FaTimes, FaLink } from 'react-icons/fa';
 import { topicAPI, uploadAPI, courseAPI, BACKEND_URL, getFileUrl } from '../services/api';
+import { useToast } from '../components/Toast';
 
 // Available programming languages
 const PROGRAMMING_LANGUAGES = [
@@ -26,6 +27,7 @@ const TopicForm = () => {
   const { courseId, topicId } = useParams();
   const navigate = useNavigate();
   const isEditing = !!topicId;
+  const { addToast } = useToast();
 
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -65,7 +67,7 @@ const TopicForm = () => {
       const { data } = await courseAPI.getById(courseId);
       setCourse(data);
     } catch (error) {
-      console.error('Failed to fetch course:', error);
+      // Course fetch is non-critical for form functionality
     }
   };
 
@@ -85,7 +87,7 @@ const TopicForm = () => {
       // Enable coding practice if it has content
       setCodingPracticeEnabled(!!codingPracticeData.title);
     } catch (error) {
-      console.error('Failed to fetch topic:', error);
+      addToast('Failed to load topic', 'error');
       navigate(`/courses/${courseId}/topics`);
     } finally {
       setLoading(false);
@@ -110,8 +112,7 @@ const TopicForm = () => {
       }
       navigate(`/courses/${courseId}/topics`);
     } catch (error) {
-      console.error('Failed to save topic:', error);
-      alert('Failed to save topic');
+      addToast('Failed to save topic', 'error');
     } finally {
       setSaving(false);
     }
@@ -134,8 +135,7 @@ const TopicForm = () => {
       const { data } = await uploadAPI.uploadFile(file);
       setFormData((prev) => ({ ...prev, pdfUrl: data.path }));
     } catch (error) {
-      console.error('Upload failed:', error);
-      alert('Failed to upload file');
+      addToast('Failed to upload file', 'error');
     } finally {
       setUploading(false);
     }
@@ -151,8 +151,7 @@ const TopicForm = () => {
       const { data } = await uploadAPI.uploadFile(file);
       updateCodingPractice('referenceImage', data.path);
     } catch (error) {
-      console.error('Image upload failed:', error);
-      alert('Failed to upload image');
+      addToast('Failed to upload image', 'error');
     } finally {
       setUploadingImage(false);
     }
@@ -526,14 +525,14 @@ const TopicForm = () => {
                   onChange={(e) => updateCodingPractice('description', e.target.value)}
                   rows={5}
                   className="w-full px-4 py-3 bg-dark-bg border border-dark-secondary rounded-lg focus:outline-none focus:border-purple-500 resize-none"
-                  placeholder="Describe the problem in detail.
+                  placeholder={`Describe the problem in detail.
 
 Example formatting:
 **Bold text** for important headings
 ==Highlighted text== for key points
-`code` for inline code
+\`code\` for inline code
 
-What should the student build? What are the requirements?"
+What should the student build? What are the requirements?`}
                 />
               </div>
 

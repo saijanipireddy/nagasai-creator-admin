@@ -30,16 +30,3 @@ body {
   background: #e94560;
   border-radius: 4px;
 }
-
-.bg-dark-bg { background-color: var(--color-dark-bg); }
-.bg-dark-card { background-color: var(--color-dark-card); }
-.bg-dark-sidebar { background-color: var(--color-dark-sidebar); }
-.bg-dark-accent { background-color: var(--color-dark-accent); }
-.bg-dark-secondary { background-color: var(--color-dark-secondary); }
-.text-dark-text { color: var(--color-dark-text); }
-.text-dark-muted { color: var(--color-dark-muted); }
-.text-dark-accent { color: var(--color-dark-accent); }
-.border-dark-secondary { border-color: var(--color-dark-secondary); }
-.border-dark-accent { border-color: var(--color-dark-accent); }
-.hover\:bg-dark-accent:hover { background-color: var(--color-dark-accent); }
-.hover\:bg-dark-secondary:hover { background-color: var(--color-dark-secondary); }

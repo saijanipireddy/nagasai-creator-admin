@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { authAPI } from '../services/api';
 
 const AuthContext = createContext(null);
@@ -15,7 +15,7 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
-  const login = async (email, password) => {
+  const login = useCallback(async (email, password) => {
     try {
       const { data } = await authAPI.login({ email, password });
       localStorage.setItem('adminToken', data.token);
@@ -25,21 +25,18 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       return { success: false, message: error.response?.data?.message || 'Login failed' };
     }
-  };
+  }, []);
 
-  const logout = () => {
+  const logout = useCallback(() => {
     localStorage.removeItem('adminToken');
     localStorage.removeItem('adminInfo');
     setAdmin(null);
-  };
+  }, []);
 
-  const value = {
-    admin,
-    loading,
-    login,
-    logout,
-    isAuthenticated: !!admin
-  };
+  const value = useMemo(
+    () => ({ admin, loading, login, logout, isAuthenticated: !!admin }),
+    [admin, loading, login, logout]
+  );
 
   return (
     <AuthContext.Provider value={value}>
