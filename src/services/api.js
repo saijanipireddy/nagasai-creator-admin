@@ -13,7 +13,6 @@ const api = axios.create({
   baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json',
-    'Accept-Encoding': 'gzip, deflate, br'
   },
   timeout: 30000
 });
