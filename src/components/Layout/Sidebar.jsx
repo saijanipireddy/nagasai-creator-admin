@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { FaHome, FaBook, FaSignOutAlt } from 'react-icons/fa';
+import { FaHome, FaBook, FaBriefcase, FaSignOutAlt } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
 
 const Sidebar = () => {
@@ -7,7 +7,8 @@ const Sidebar = () => {
 
   const navItems = [
     { path: '/', icon: FaHome, label: 'Dashboard' },
-    { path: '/courses', icon: FaBook, label: 'Courses' }
+    { path: '/courses', icon: FaBook, label: 'Courses' },
+    { path: '/jobs', icon: FaBriefcase, label: 'Jobs Board' }
   ];
 
   return (
