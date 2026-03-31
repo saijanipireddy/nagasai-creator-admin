@@ -26,10 +26,18 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Handle response errors
+// Handle response errors - redirect to login on 401
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('adminToken');
+      localStorage.removeItem('adminInfo');
+      // Only redirect if not already on login page
+      if (!window.location.pathname.includes('/login')) {
+        window.location.href = '/login';
+      }
+    }
     return Promise.reject(error);
   }
 );
@@ -87,6 +95,24 @@ export const jobAPI = {
   create: (data) => api.post('/jobs', data),
   update: (id, data) => api.put(`/jobs/${id}`, data),
   delete: (id) => api.delete(`/jobs/${id}`),
+};
+
+// Batch APIs
+export const batchAPI = {
+  getAll: () => api.get('/batches').then(res => ({ ...res, data: res.data.batches })),
+  getById: (id) => api.get(`/batches/${id}`),
+  create: (data) => api.post('/batches', data),
+  update: (id, data) => api.put(`/batches/${id}`, data),
+  delete: (id) => api.delete(`/batches/${id}`),
+  // Courses
+  assignCourses: (id, courseIds) => api.post(`/batches/${id}/courses`, { courseIds }),
+  removeCourse: (id, courseId) => api.delete(`/batches/${id}/courses/${courseId}`),
+  // Students
+  getAllStudents: () => api.get('/batches/students/all').then(res => ({ ...res, data: res.data.students })),
+  onboardStudent: (data) => api.post('/batches/students/onboard', data),
+  enrollStudents: (id, studentIds, paymentStatus = 'paid') => api.post(`/batches/${id}/students`, { studentIds, paymentStatus }),
+  updateEnrollment: (id, studentId, data) => api.put(`/batches/${id}/students/${studentId}`, data),
+  removeStudent: (id, studentId) => api.delete(`/batches/${id}/students/${studentId}`),
 };
 
 // Upload API
