@@ -9,38 +9,59 @@ export const getFileUrl = (filePath) => {
   return filePath;
 };
 
+/* ------------------------------------------------------------------ */
+/*  IN-MEMORY TOKEN STORE                                             */
+/*  Tokens live only in this closure — never in localStorage.         */
+/*  Cleared automatically when the tab closes.                        */
+/* ------------------------------------------------------------------ */
+let accessToken = null;
+let refreshTokenValue = null;
+
+export const setTokens = (access, refresh) => {
+  accessToken = access || null;
+  refreshTokenValue = refresh || null;
+};
+
+export const clearTokens = () => {
+  accessToken = null;
+  refreshTokenValue = null;
+};
+
+export const getAccessToken = () => accessToken;
+
 const api = axios.create({
   baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json',
   },
-  withCredentials: true, // Send cookies with every request
+  withCredentials: true, // Still send cookies when browser allows it
   timeout: 30000,
 });
 
 /* ------------------------------------------------------------------ */
-/*  CSRF: read csrf_token cookie and send as X-CSRF-Token header      */
+/*  REQUEST INTERCEPTOR: attach Authorization header + CSRF           */
 /* ------------------------------------------------------------------ */
-const getCsrfToken = () => {
-  const match = document.cookie
-    .split('; ')
-    .find((row) => row.startsWith('csrf_token='));
-  return match ? match.split('=')[1] : null;
-};
-
 api.interceptors.request.use((config) => {
-  // Attach CSRF token to state-changing requests
+  // Always send access token as Authorization header (works cross-origin)
+  if (accessToken) {
+    config.headers.Authorization = `Bearer ${accessToken}`;
+  }
+
+  // For state-changing requests, also send CSRF token (when cookies work)
   if (!['get', 'head', 'options'].includes(config.method)) {
-    const csrfToken = getCsrfToken();
-    if (csrfToken) {
-      config.headers['X-CSRF-Token'] = csrfToken;
+    const csrfMatch = document.cookie
+      .split('; ')
+      .find((row) => row.startsWith('csrf_token='));
+    if (csrfMatch) {
+      config.headers['X-CSRF-Token'] = csrfMatch.split('=')[1];
     }
   }
+
   return config;
 });
 
 /* ------------------------------------------------------------------ */
-/*  AUTO-REFRESH: on 401, try to refresh the access token once        */
+/*  RESPONSE INTERCEPTOR: auto-refresh on 401                         */
 /* ------------------------------------------------------------------ */
 let isRefreshing = false;
 let failedQueue = [];
@@ -58,7 +79,6 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    // If 401 and not already retrying, attempt a token refresh
     if (
       error.response?.status === 401 &&
       !originalRequest._retry &&
@@ -66,7 +86,6 @@ api.interceptors.response.use(
       !originalRequest.url?.includes('/auth/login')
     ) {
       if (isRefreshing) {
-        // Queue this request until the refresh completes
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
         }).then(() => api(originalRequest));
@@ -76,12 +95,23 @@ api.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        await api.post('/auth/refresh');
+        // Try refresh — send refresh token via cookie AND header
+        const refreshConfig = {};
+        if (refreshTokenValue) {
+          refreshConfig.headers = { Authorization: `Bearer ${refreshTokenValue}` };
+        }
+        const { data } = await api.post('/auth/refresh', {}, refreshConfig);
+
+        // Store new tokens from response body
+        if (data.accessToken) {
+          setTokens(data.accessToken, data.refreshToken);
+        }
+
         processQueue(null);
         return api(originalRequest);
       } catch (refreshError) {
         processQueue(refreshError);
-        // Refresh failed — redirect to login
+        clearTokens();
         if (!window.location.pathname.includes('/login')) {
           window.location.href = '/login';
         }
@@ -159,10 +189,8 @@ export const batchAPI = {
   create: (data) => api.post('/batches', data),
   update: (id, data) => api.put(`/batches/${id}`, data),
   delete: (id) => api.delete(`/batches/${id}`),
-  // Courses
   assignCourses: (id, courseIds) => api.post(`/batches/${id}/courses`, { courseIds }),
   removeCourse: (id, courseId) => api.delete(`/batches/${id}/courses/${courseId}`),
-  // Students
   getAllStudents: () => api.get('/batches/students/all').then(res => ({ ...res, data: res.data.students })),
   onboardStudent: (data) => api.post('/batches/students/onboard', data),
   enrollStudents: (id, studentIds, paymentStatus = 'paid') => api.post(`/batches/${id}/students`, { studentIds, paymentStatus }),
