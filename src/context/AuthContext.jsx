@@ -3,40 +3,34 @@ import { authAPI } from '../services/api';
 
 const AuthContext = createContext(null);
 
-// Decode JWT and check if expired
-const isTokenExpired = (token) => {
-  if (!token) return true;
-  try {
-    const payload = JSON.parse(atob(token.split('.')[1]));
-    return payload.exp * 1000 < Date.now();
-  } catch {
-    return true;
-  }
-};
-
 export const AuthProvider = ({ children }) => {
   const [admin, setAdmin] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // On mount: verify session by calling the profile endpoint.
+  // If access token expired, the axios interceptor auto-refreshes it.
+  // If refresh also fails, user is not authenticated.
   useEffect(() => {
-    const token = localStorage.getItem('adminToken');
-    const adminInfo = localStorage.getItem('adminInfo');
+    let cancelled = false;
 
-    if (token && adminInfo && !isTokenExpired(token)) {
-      setAdmin(JSON.parse(adminInfo));
-    } else {
-      // Clear stale data
-      localStorage.removeItem('adminToken');
-      localStorage.removeItem('adminInfo');
-    }
-    setLoading(false);
+    const checkAuth = async () => {
+      try {
+        const { data } = await authAPI.getProfile();
+        if (!cancelled) setAdmin(data);
+      } catch {
+        if (!cancelled) setAdmin(null);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    checkAuth();
+    return () => { cancelled = true; };
   }, []);
 
   const login = useCallback(async (email, password) => {
     try {
       const { data } = await authAPI.login({ email, password });
-      localStorage.setItem('adminToken', data.token);
-      localStorage.setItem('adminInfo', JSON.stringify(data));
       setAdmin(data);
       return { success: true };
     } catch (error) {
@@ -44,9 +38,12 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  const logout = useCallback(() => {
-    localStorage.removeItem('adminToken');
-    localStorage.removeItem('adminInfo');
+  const logout = useCallback(async () => {
+    try {
+      await authAPI.logout();
+    } catch {
+      // Ignore errors — clear local state regardless
+    }
     setAdmin(null);
   }, []);
 

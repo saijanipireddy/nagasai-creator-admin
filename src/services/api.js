@@ -14,30 +14,83 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 30000
+  withCredentials: true, // Send cookies with every request
+  timeout: 30000,
 });
 
-// Add auth token to requests
+/* ------------------------------------------------------------------ */
+/*  CSRF: read csrf_token cookie and send as X-CSRF-Token header      */
+/* ------------------------------------------------------------------ */
+const getCsrfToken = () => {
+  const match = document.cookie
+    .split('; ')
+    .find((row) => row.startsWith('csrf_token='));
+  return match ? match.split('=')[1] : null;
+};
+
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('adminToken');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+  // Attach CSRF token to state-changing requests
+  if (!['get', 'head', 'options'].includes(config.method)) {
+    const csrfToken = getCsrfToken();
+    if (csrfToken) {
+      config.headers['X-CSRF-Token'] = csrfToken;
+    }
   }
   return config;
 });
 
-// Handle response errors - redirect to login on 401
+/* ------------------------------------------------------------------ */
+/*  AUTO-REFRESH: on 401, try to refresh the access token once        */
+/* ------------------------------------------------------------------ */
+let isRefreshing = false;
+let failedQueue = [];
+
+const processQueue = (error) => {
+  failedQueue.forEach(({ resolve, reject }) => {
+    if (error) reject(error);
+    else resolve();
+  });
+  failedQueue = [];
+};
+
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem('adminToken');
-      localStorage.removeItem('adminInfo');
-      // Only redirect if not already on login page
-      if (!window.location.pathname.includes('/login')) {
-        window.location.href = '/login';
+  async (error) => {
+    const originalRequest = error.config;
+
+    // If 401 and not already retrying, attempt a token refresh
+    if (
+      error.response?.status === 401 &&
+      !originalRequest._retry &&
+      !originalRequest.url?.includes('/auth/refresh') &&
+      !originalRequest.url?.includes('/auth/login')
+    ) {
+      if (isRefreshing) {
+        // Queue this request until the refresh completes
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        }).then(() => api(originalRequest));
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      try {
+        await api.post('/auth/refresh');
+        processQueue(null);
+        return api(originalRequest);
+      } catch (refreshError) {
+        processQueue(refreshError);
+        // Refresh failed — redirect to login
+        if (!window.location.pathname.includes('/login')) {
+          window.location.href = '/login';
+        }
+        return Promise.reject(refreshError);
+      } finally {
+        isRefreshing = false;
       }
     }
+
     return Promise.reject(error);
   }
 );
@@ -54,7 +107,9 @@ const extractData = (response) => {
 export const authAPI = {
   login: (credentials) => api.post('/auth/login', credentials),
   register: (data) => api.post('/auth/register', data),
-  getProfile: () => api.get('/auth/profile')
+  getProfile: () => api.get('/auth/profile'),
+  refresh: () => api.post('/auth/refresh'),
+  logout: () => api.post('/auth/logout'),
 };
 
 // Course APIs
