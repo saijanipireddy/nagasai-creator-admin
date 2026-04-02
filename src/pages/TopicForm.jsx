@@ -50,6 +50,8 @@ const TopicForm = () => {
       hints: [],
       testScript: '',
       testCases: [],
+      difficulty: 'easy',
+      maxScore: 100,
     },
     isPublished: false
   });
@@ -498,6 +500,34 @@ const TopicForm = () => {
                     </option>
                   ))}
                 </select>
+              </div>
+
+              {/* Difficulty & Max Score */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">Difficulty Level *</label>
+                  <select
+                    value={formData.codingPractice.difficulty || 'easy'}
+                    onChange={(e) => updateCodingPractice('difficulty', e.target.value)}
+                    className="w-full px-4 py-3 bg-dark-bg border border-dark-secondary rounded-lg focus:outline-none focus:border-purple-500"
+                  >
+                    <option value="easy">Easy</option>
+                    <option value="medium">Medium</option>
+                    <option value="hard">Hard</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Max Score *</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="1000"
+                    value={formData.codingPractice.maxScore || 100}
+                    onChange={(e) => updateCodingPractice('maxScore', parseInt(e.target.value) || 100)}
+                    className="w-full px-4 py-3 bg-dark-bg border border-dark-secondary rounded-lg focus:outline-none focus:border-purple-500"
+                    placeholder="100"
+                  />
+                </div>
               </div>
 
               {/* Problem Title */}
