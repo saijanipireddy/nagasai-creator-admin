@@ -209,6 +209,12 @@ export const batchAPI = {
   removeStudent: (id, studentId) => api.delete(`/batches/${id}/students/${studentId}`),
   getProgress: (id) => api.get(`/batches/${id}/progress`),
   getStudentProgress: (batchId, studentId) => api.get(`/batches/${batchId}/students/${studentId}/progress`),
+  // Topic schedule
+  getSchedule: (id, courseId) => api.get(`/batches/${id}/schedule/${courseId}`),
+  autoSchedule: (id, data) => api.post(`/batches/${id}/schedule/auto`, data),
+  bulkSchedule: (id, data) => api.post(`/batches/${id}/schedule/bulk`, data),
+  toggleTopicUnlock: (id, topicId, unlock) => api.put(`/batches/${id}/schedule/toggle`, { topicId, unlock }),
+  clearSchedule: (id, courseId) => api.delete(`/batches/${id}/schedule/${courseId}`),
 };
 
 // Announcement APIs
