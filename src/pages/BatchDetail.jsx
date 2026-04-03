@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
   FaArrowLeft, FaPlus, FaTrash, FaBook, FaUsers, FaToggleOn, FaToggleOff,
   FaSearch, FaTimes, FaCheckCircle, FaClock, FaGift, FaUserPlus, FaEnvelope,
-  FaLock, FaPhone, FaUser, FaEye, FaEyeSlash
+  FaLock, FaPhone, FaUser, FaEye, FaEyeSlash, FaChartBar
 } from 'react-icons/fa';
 import { batchAPI, courseAPI } from '../services/api';
 import { useToast } from '../components/Toast';
@@ -216,6 +216,9 @@ const BatchDetail = () => {
           <h1 className="text-2xl font-bold">{batch.name}</h1>
           <p className="text-dark-muted">{batch.description || 'No description'}</p>
         </div>
+        <Link to={`/batches/${id}/progress`} className="flex items-center gap-2 px-4 py-2 bg-dark-accent text-white rounded-lg hover:bg-dark-accent/80 transition-colors text-sm">
+          <FaChartBar /> Student Progress
+        </Link>
         <span className={`px-3 py-1 rounded-full text-xs ${batch.isActive ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-500'}`}>
           {batch.isActive ? 'Active' : 'Inactive'}
         </span>

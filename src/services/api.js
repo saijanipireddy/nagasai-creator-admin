@@ -1,5 +1,8 @@
 import axios from 'axios';
 
+if (!import.meta.env.VITE_BACKEND_URL && import.meta.env.PROD) {
+  throw new Error('VITE_BACKEND_URL environment variable is required in production');
+}
 export const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
 const API_URL = `${BACKEND_URL}/api`;
 
@@ -10,24 +13,26 @@ export const getFileUrl = (filePath) => {
 };
 
 /* ------------------------------------------------------------------ */
-/*  IN-MEMORY TOKEN STORE                                             */
-/*  Tokens live only in this closure — never in localStorage.         */
-/*  Cleared automatically when the tab closes.                        */
+/*  TOKEN STORE                                                       */
+/*  Access token: in-memory (short-lived, 15min)                      */
+/*  Refresh token: localStorage (survives page refresh, 7-day TTL)    */
 /* ------------------------------------------------------------------ */
 let accessToken = null;
-let refreshTokenValue = null;
 
 export const setTokens = (access, refresh) => {
   accessToken = access || null;
-  refreshTokenValue = refresh || null;
+  if (refresh) {
+    localStorage.setItem('admin_refresh_token', refresh);
+  }
 };
 
 export const clearTokens = () => {
   accessToken = null;
-  refreshTokenValue = null;
+  localStorage.removeItem('admin_refresh_token');
 };
 
 export const getAccessToken = () => accessToken;
+export const getRefreshToken = () => localStorage.getItem('admin_refresh_token');
 
 const api = axios.create({
   baseURL: API_URL,
@@ -95,10 +100,11 @@ api.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        // Try refresh — send refresh token via cookie AND header
+        // Try refresh — send refresh token via header (cookies may be blocked cross-origin)
         const refreshConfig = {};
-        if (refreshTokenValue) {
-          refreshConfig.headers = { Authorization: `Bearer ${refreshTokenValue}` };
+        const storedRefresh = getRefreshToken();
+        if (storedRefresh) {
+          refreshConfig.headers = { Authorization: `Bearer ${storedRefresh}` };
         }
         const { data } = await api.post('/auth/refresh', {}, refreshConfig);
 
@@ -138,7 +144,12 @@ export const authAPI = {
   login: (credentials) => api.post('/auth/login', credentials),
   register: (data) => api.post('/auth/register', data),
   getProfile: () => api.get('/auth/profile'),
-  refresh: () => api.post('/auth/refresh'),
+  refresh: (refreshToken) => {
+    const config = {};
+    const token = refreshToken || getRefreshToken();
+    if (token) config.headers = { Authorization: `Bearer ${token}` };
+    return api.post('/auth/refresh', {}, config);
+  },
   logout: () => api.post('/auth/logout'),
 };
 
@@ -196,6 +207,16 @@ export const batchAPI = {
   enrollStudents: (id, studentIds, paymentStatus = 'paid') => api.post(`/batches/${id}/students`, { studentIds, paymentStatus }),
   updateEnrollment: (id, studentId, data) => api.put(`/batches/${id}/students/${studentId}`, data),
   removeStudent: (id, studentId) => api.delete(`/batches/${id}/students/${studentId}`),
+  getProgress: (id) => api.get(`/batches/${id}/progress`),
+  getStudentProgress: (batchId, studentId) => api.get(`/batches/${batchId}/students/${studentId}/progress`),
+};
+
+// Announcement APIs
+export const announcementAPI = {
+  getAll: () => api.get('/announcements').then(res => ({ ...res, data: res.data.announcements })),
+  create: (data) => api.post('/announcements', data),
+  update: (id, data) => api.put(`/announcements/${id}`, data),
+  delete: (id) => api.delete(`/announcements/${id}`),
 };
 
 // Upload API

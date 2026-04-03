@@ -15,6 +15,8 @@ const Batches = lazy(() => import('./pages/Batches'));
 const BatchDetail = lazy(() => import('./pages/BatchDetail'));
 const Jobs = lazy(() => import('./pages/Jobs'));
 const JobForm = lazy(() => import('./pages/JobForm'));
+const StudentProgress = lazy(() => import('./pages/StudentProgress'));
+const Announcements = lazy(() => import('./pages/Announcements'));
 
 const Spinner = () => (
   <div className="min-h-screen bg-dark-bg flex items-center justify-center">
@@ -59,9 +61,11 @@ function AppRoutes() {
         <Route path="courses/:courseId/topics/:topicId/edit" element={<Suspense fallback={<Spinner />}><TopicForm /></Suspense>} />
         <Route path="batches" element={<Suspense fallback={<Spinner />}><Batches /></Suspense>} />
         <Route path="batches/:id" element={<Suspense fallback={<Spinner />}><BatchDetail /></Suspense>} />
+        <Route path="batches/:id/progress" element={<Suspense fallback={<Spinner />}><StudentProgress /></Suspense>} />
         <Route path="jobs" element={<Suspense fallback={<Spinner />}><Jobs /></Suspense>} />
         <Route path="jobs/new" element={<Suspense fallback={<Spinner />}><JobForm /></Suspense>} />
         <Route path="jobs/:id/edit" element={<Suspense fallback={<Spinner />}><JobForm /></Suspense>} />
+        <Route path="announcements" element={<Suspense fallback={<Spinner />}><Announcements /></Suspense>} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

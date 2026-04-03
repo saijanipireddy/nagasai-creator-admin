@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { FaHome, FaBook, FaBriefcase, FaSignOutAlt, FaUsers } from 'react-icons/fa';
+import { FaHome, FaBook, FaBriefcase, FaSignOutAlt, FaUsers, FaBullhorn } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
 
 const Sidebar = () => {
@@ -9,7 +9,8 @@ const Sidebar = () => {
     { path: '/', icon: FaHome, label: 'Dashboard' },
     { path: '/courses', icon: FaBook, label: 'Courses' },
     { path: '/batches', icon: FaUsers, label: 'Batches' },
-    { path: '/jobs', icon: FaBriefcase, label: 'Jobs Board' }
+    { path: '/jobs', icon: FaBriefcase, label: 'Jobs Board' },
+    { path: '/announcements', icon: FaBullhorn, label: 'Announcements' }
   ];
 
   return (

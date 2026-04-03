@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
-import { authAPI, setTokens, clearTokens, getAccessToken } from '../services/api';
+import { authAPI, setTokens, clearTokens, getAccessToken, getRefreshToken } from '../services/api';
 
 const AuthContext = createContext(null);
 
@@ -21,15 +21,20 @@ export const AuthProvider = ({ children }) => {
           return;
         }
 
-        // No token in memory — try refresh (uses cookie if browser stored it)
+        // No access token in memory — try refresh using stored refresh token
+        const storedRefresh = getRefreshToken();
+        if (!storedRefresh) {
+          if (!cancelled) setAdmin(null);
+          return;
+        }
         try {
-          const { data } = await authAPI.refresh();
+          const { data } = await authAPI.refresh(storedRefresh);
           if (data.accessToken) {
             setTokens(data.accessToken, data.refreshToken);
           }
           if (!cancelled) setAdmin({ _id: data._id, name: data.name, email: data.email });
         } catch {
-          // No valid session
+          clearTokens();
           if (!cancelled) setAdmin(null);
         }
       } catch {
