@@ -6,8 +6,7 @@ import { useToast } from '../components/Toast';
 
 // Available programming languages
 const PROGRAMMING_LANGUAGES = [
-  { value: 'html', label: 'HTML' },
-  { value: 'css', label: 'CSS' },
+  { value: 'web', label: 'Web (HTML + CSS + JS)' },
   { value: 'javascript', label: 'JavaScript' },
   { value: 'python', label: 'Python' },
   { value: 'java', label: 'Java' },
@@ -40,12 +39,15 @@ const TopicForm = () => {
     pdfUrl: '',
     practice: [],
     codingPractice: {
-      language: 'javascript',
+      language: 'web',
       title: '',
       description: '',
       referenceImage: '',
       imageLinks: [],
       starterCode: '',
+      starterHtml: '',
+      starterCss: '',
+      starterJs: '',
       expectedOutput: '',
       hints: [],
       testScript: '',
@@ -77,7 +79,35 @@ const TopicForm = () => {
     setLoading(true);
     try {
       const { data } = await topicAPI.getById(topicId);
-      const codingPracticeData = data.codingPractice || { language: 'javascript', title: '', description: '', referenceImage: '', imageLinks: [], starterCode: '', expectedOutput: '', hints: [], testScript: '', testCases: [] };
+      const codingPracticeData = data.codingPractice || { language: 'web', title: '', description: '', referenceImage: '', imageLinks: [], starterCode: '', expectedOutput: '', hints: [], testScript: '', testCases: [] };
+      // For web language, split starterCode into separate HTML/CSS/JS
+      if (codingPracticeData.language === 'web' || codingPracticeData.language === 'html' || codingPracticeData.language === 'css') {
+        const code = codingPracticeData.starterCode || '';
+        let extractedHtml = code;
+        let extractedCss = '';
+        let extractedJs = '';
+        const styleMatch = code.match(/<style[^>]*>([\s\S]*?)<\/style>/i);
+        if (styleMatch) {
+          extractedCss = styleMatch[1].trim();
+          extractedHtml = extractedHtml.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '');
+        }
+        const scriptMatch = code.match(/<script[^>]*>([\s\S]*?)<\/script>/i);
+        if (scriptMatch) {
+          extractedJs = scriptMatch[1].trim();
+          extractedHtml = extractedHtml.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '');
+        }
+        codingPracticeData.starterHtml = extractedHtml.trim();
+        codingPracticeData.starterCss = extractedCss;
+        codingPracticeData.starterJs = extractedJs;
+        // Migrate old html/css language to web
+        if (codingPracticeData.language === 'html' || codingPracticeData.language === 'css') {
+          codingPracticeData.language = 'web';
+        }
+      } else {
+        codingPracticeData.starterHtml = '';
+        codingPracticeData.starterCss = '';
+        codingPracticeData.starterJs = '';
+      }
       setFormData({
         title: data.title || '',
         videoUrl: data.videoUrl || '',
@@ -101,11 +131,28 @@ const TopicForm = () => {
     setSaving(true);
 
     try {
+      let codingPracticePayload;
+      if (codingPracticeEnabled) {
+        codingPracticePayload = { ...formData.codingPractice };
+        // For web language, combine separate HTML/CSS/JS into one starterCode
+        if (codingPracticePayload.language === 'web') {
+          const htmlPart = codingPracticePayload.starterHtml || '';
+          const cssPart = codingPracticePayload.starterCss || '';
+          const jsPart = codingPracticePayload.starterJs || '';
+          codingPracticePayload.starterCode = `${htmlPart}\n<style>\n${cssPart}\n</style>\n<script>\n${jsPart}\n</script>`;
+        }
+        // Clean up temporary fields
+        delete codingPracticePayload.starterHtml;
+        delete codingPracticePayload.starterCss;
+        delete codingPracticePayload.starterJs;
+      } else {
+        codingPracticePayload = { language: 'web', title: '', description: '', referenceImage: '', imageLinks: [], starterCode: '', expectedOutput: '', hints: [], testScript: '', testCases: [] };
+      }
+
       const payload = {
         ...formData,
         courseId,
-        // Only include codingPractice if enabled, otherwise send empty object
-        codingPractice: codingPracticeEnabled ? formData.codingPractice : { language: 'javascript', title: '', description: '', referenceImage: '', imageLinks: [], starterCode: '', expectedOutput: '', hints: [], testScript: '', testCases: [] }
+        codingPractice: codingPracticePayload
       };
       if (isEditing) {
         await topicAPI.update(topicId, payload);
@@ -566,117 +613,166 @@ What should the student build? What are the requirements?`}
                 />
               </div>
 
-              {/* Reference Image */}
-              <div>
-                <label className="block text-sm font-medium mb-2 flex items-center gap-2">
-                  <FaImage className="text-blue-400" />
-                  Reference Image
-                  <span className="text-xs text-dark-muted">(Optional - for UI replication tasks)</span>
-                </label>
-                {formData.codingPractice.referenceImage ? (
-                  <div className="relative">
-                    <img
-                      src={getFileUrl(formData.codingPractice.referenceImage)}
-                      alt="Reference"
-                      className="w-full max-h-64 object-contain bg-dark-bg rounded-lg border border-dark-secondary"
-                    />
+              {/* Reference Image (Web only) */}
+              {formData.codingPractice.language === 'web' && (
+                <div>
+                  <label className="block text-sm font-medium mb-2 flex items-center gap-2">
+                    <FaImage className="text-blue-400" />
+                    Reference Image
+                    <span className="text-xs text-dark-muted">(Optional - for UI replication tasks)</span>
+                  </label>
+                  {formData.codingPractice.referenceImage ? (
+                    <div className="relative">
+                      <img
+                        src={getFileUrl(formData.codingPractice.referenceImage)}
+                        alt="Reference"
+                        className="w-full max-h-64 object-contain bg-dark-bg rounded-lg border border-dark-secondary"
+                      />
+                      <button
+                        type="button"
+                        onClick={removeReferenceImage}
+                        className="absolute top-2 right-2 p-2 bg-red-500 rounded-full hover:bg-red-600 transition-colors"
+                      >
+                        <FaTimes className="text-white text-sm" />
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="flex flex-col items-center justify-center w-full h-32 bg-dark-bg border-2 border-dashed border-dark-secondary rounded-lg cursor-pointer hover:border-blue-400 transition-colors">
+                      <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                        {uploadingImage ? (
+                          <FaSpinner className="animate-spin text-2xl text-blue-400 mb-2" />
+                        ) : (
+                          <FaImage className="text-2xl text-dark-muted mb-2" />
+                        )}
+                        <p className="text-sm text-dark-muted">
+                          {uploadingImage ? 'Uploading...' : 'Click to upload reference image'}
+                        </p>
+                        <p className="text-xs text-dark-muted mt-1">PNG, JPG, GIF up to 10MB</p>
+                      </div>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleReferenceImageUpload}
+                        className="hidden"
+                        disabled={uploadingImage}
+                      />
+                    </label>
+                  )}
+                </div>
+              )}
+
+              {/* Image Links (Web only) */}
+              {formData.codingPractice.language === 'web' && (
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-sm font-medium flex items-center gap-2">
+                      <FaLink className="text-cyan-400" />
+                      Image Links
+                      <span className="text-xs text-dark-muted">(URLs for students to use)</span>
+                    </label>
                     <button
                       type="button"
-                      onClick={removeReferenceImage}
-                      className="absolute top-2 right-2 p-2 bg-red-500 rounded-full hover:bg-red-600 transition-colors"
+                      onClick={addImageLink}
+                      className="flex items-center gap-1 px-3 py-1 bg-dark-secondary rounded-lg hover:bg-dark-secondary/80 transition-colors text-sm"
                     >
-                      <FaTimes className="text-white text-sm" />
+                      <FaPlus className="text-xs" /> Add Link
                     </button>
                   </div>
-                ) : (
-                  <label className="flex flex-col items-center justify-center w-full h-32 bg-dark-bg border-2 border-dashed border-dark-secondary rounded-lg cursor-pointer hover:border-blue-400 transition-colors">
-                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                      {uploadingImage ? (
-                        <FaSpinner className="animate-spin text-2xl text-blue-400 mb-2" />
-                      ) : (
-                        <FaImage className="text-2xl text-dark-muted mb-2" />
-                      )}
-                      <p className="text-sm text-dark-muted">
-                        {uploadingImage ? 'Uploading...' : 'Click to upload reference image'}
-                      </p>
-                      <p className="text-xs text-dark-muted mt-1">PNG, JPG, GIF up to 10MB</p>
-                    </div>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleReferenceImageUpload}
-                      className="hidden"
-                      disabled={uploadingImage}
-                    />
-                  </label>
-                )}
-              </div>
-
-              {/* Image Links */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="text-sm font-medium flex items-center gap-2">
-                    <FaLink className="text-cyan-400" />
-                    Image Links
-                    <span className="text-xs text-dark-muted">(URLs for students to use)</span>
-                  </label>
-                  <button
-                    type="button"
-                    onClick={addImageLink}
-                    className="flex items-center gap-1 px-3 py-1 bg-dark-secondary rounded-lg hover:bg-dark-secondary/80 transition-colors text-sm"
-                  >
-                    <FaPlus className="text-xs" /> Add Link
-                  </button>
-                </div>
-                {formData.codingPractice.imageLinks && formData.codingPractice.imageLinks.length > 0 ? (
-                  <div className="space-y-3">
-                    {formData.codingPractice.imageLinks.map((link, index) => (
-                      <div key={index} className="p-3 bg-dark-bg rounded-lg">
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="text-cyan-400 text-sm">#{index + 1}</span>
+                  {formData.codingPractice.imageLinks && formData.codingPractice.imageLinks.length > 0 ? (
+                    <div className="space-y-3">
+                      {formData.codingPractice.imageLinks.map((link, index) => (
+                        <div key={index} className="p-3 bg-dark-bg rounded-lg">
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="text-cyan-400 text-sm">#{index + 1}</span>
+                            <input
+                              type="text"
+                              value={typeof link === 'object' ? link.label : ''}
+                              onChange={(e) => updateImageLink(index, 'label', e.target.value)}
+                              className="flex-1 px-3 py-2 bg-dark-card border border-dark-secondary rounded-lg focus:outline-none focus:border-cyan-400 text-sm"
+                              placeholder="Label (e.g., Background Image, Logo)"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => removeImageLink(index)}
+                              className="p-2 text-red-500 hover:bg-red-500/20 rounded-lg transition-colors"
+                            >
+                              <FaTrash className="text-sm" />
+                            </button>
+                          </div>
                           <input
                             type="text"
-                            value={link.label}
-                            onChange={(e) => updateImageLink(index, 'label', e.target.value)}
-                            className="flex-1 px-3 py-2 bg-dark-card border border-dark-secondary rounded-lg focus:outline-none focus:border-cyan-400 text-sm"
-                            placeholder="Label (e.g., Background Image, Logo)"
+                            value={typeof link === 'object' ? link.url : link}
+                            onChange={(e) => updateImageLink(index, 'url', e.target.value)}
+                            className="w-full px-3 py-2 bg-dark-card border border-dark-secondary rounded-lg focus:outline-none focus:border-cyan-400 text-sm font-mono"
+                            placeholder="https://example.com/image.jpg"
                           />
-                          <button
-                            type="button"
-                            onClick={() => removeImageLink(index)}
-                            className="p-2 text-red-500 hover:bg-red-500/20 rounded-lg transition-colors"
-                          >
-                            <FaTrash className="text-sm" />
-                          </button>
                         </div>
-                        <input
-                          type="url"
-                          value={link.url}
-                          onChange={(e) => updateImageLink(index, 'url', e.target.value)}
-                          className="w-full px-3 py-2 bg-dark-card border border-dark-secondary rounded-lg focus:outline-none focus:border-cyan-400 text-sm font-mono"
-                          placeholder="https://example.com/image.jpg"
-                        />
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-dark-muted text-sm text-center py-3 bg-dark-bg rounded-lg">
-                    No image links added. Add URLs for background images, icons, etc.
-                  </p>
-                )}
-              </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-dark-muted text-sm text-center py-3 bg-dark-bg rounded-lg">
+                      No image links added. Add URLs for background images, icons, etc.
+                    </p>
+                  )}
+                </div>
+              )}
 
-              {/* Starter Code */}
-              <div>
-                <label className="block text-sm font-medium mb-2">Starter Code</label>
-                <textarea
-                  value={formData.codingPractice.starterCode}
-                  onChange={(e) => updateCodingPractice('starterCode', e.target.value)}
-                  rows={8}
-                  className="w-full px-4 py-3 bg-dark-bg border border-dark-secondary rounded-lg focus:outline-none focus:border-purple-500 resize-none font-mono text-sm"
-                  placeholder="// Write starter code here that students will begin with..."
-                />
-              </div>
+              {/* Starter Code - Separate fields for Web, single field for others */}
+              {formData.codingPractice.language === 'web' ? (
+                <div className="space-y-3">
+                  <label className="block text-sm font-medium">Starter Code</label>
+                  {/* HTML */}
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-xs font-bold text-orange-400 bg-orange-400/10 px-2 py-0.5 rounded">HTML</span>
+                    </div>
+                    <textarea
+                      value={formData.codingPractice.starterHtml}
+                      onChange={(e) => updateCodingPractice('starterHtml', e.target.value)}
+                      rows={6}
+                      className="w-full px-4 py-3 bg-dark-bg border border-dark-secondary rounded-lg focus:outline-none focus:border-orange-500 resize-none font-mono text-sm"
+                      placeholder={`<div id="container">\n  <!-- Add your HTML here -->\n</div>`}
+                    />
+                  </div>
+                  {/* CSS */}
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-xs font-bold text-blue-400 bg-blue-400/10 px-2 py-0.5 rounded">CSS</span>
+                    </div>
+                    <textarea
+                      value={formData.codingPractice.starterCss}
+                      onChange={(e) => updateCodingPractice('starterCss', e.target.value)}
+                      rows={6}
+                      className="w-full px-4 py-3 bg-dark-bg border border-dark-secondary rounded-lg focus:outline-none focus:border-blue-500 resize-none font-mono text-sm"
+                      placeholder={`* { margin: 0; padding: 0; box-sizing: border-box; }\nbody { font-family: Arial, sans-serif; }\n\n/* Add your styles here */`}
+                    />
+                  </div>
+                  {/* JS */}
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-xs font-bold text-yellow-400 bg-yellow-400/10 px-2 py-0.5 rounded">JavaScript</span>
+                    </div>
+                    <textarea
+                      value={formData.codingPractice.starterJs}
+                      onChange={(e) => updateCodingPractice('starterJs', e.target.value)}
+                      rows={4}
+                      className="w-full px-4 py-3 bg-dark-bg border border-dark-secondary rounded-lg focus:outline-none focus:border-yellow-500 resize-none font-mono text-sm"
+                      placeholder="// Add your JavaScript here (optional)"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <label className="block text-sm font-medium mb-2">Starter Code</label>
+                  <textarea
+                    value={formData.codingPractice.starterCode}
+                    onChange={(e) => updateCodingPractice('starterCode', e.target.value)}
+                    rows={8}
+                    className="w-full px-4 py-3 bg-dark-bg border border-dark-secondary rounded-lg focus:outline-none focus:border-purple-500 resize-none font-mono text-sm"
+                    placeholder="// Write starter code here that students will begin with..."
+                  />
+                </div>
+              )}
 
               {/* Expected Output */}
               <div>
@@ -690,8 +786,8 @@ What should the student build? What are the requirements?`}
                 />
               </div>
 
-              {/* Test Script (for web languages: html, css, javascript) */}
-              {['html', 'css', 'javascript'].includes(formData.codingPractice.language) && (
+              {/* Test Script (for web language) */}
+              {formData.codingPractice.language === 'web' && (
                 <div>
                   <label className="block text-sm font-medium mb-2 flex items-center gap-2">
                     <FaCode className="text-green-400" />
@@ -728,7 +824,7 @@ console.log('TEST_RESULTS:' + JSON.stringify(results));`}
               )}
 
               {/* Test Cases (for non-web languages) */}
-              {!['html', 'css', 'javascript'].includes(formData.codingPractice.language) && (
+              {formData.codingPractice.language !== 'web' && (
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <label className="text-sm font-medium flex items-center gap-2">
