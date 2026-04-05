@@ -225,6 +225,15 @@ export const announcementAPI = {
   delete: (id) => api.delete(`/announcements/${id}`),
 };
 
+// Interview APIs
+export const interviewAPI = {
+  grantAccess: (data) => api.post('/interviews/access', data),
+  revokeAccess: (id) => api.delete(`/interviews/access/${id}`),
+  getAllAccess: () => api.get('/interviews/access').then(res => ({ ...res, data: res.data.accessList })),
+  getAllInterviews: () => api.get('/interviews/all').then(res => ({ ...res, data: res.data.interviews })),
+  getReport: (id) => api.get(`/interviews/report/${id}`),
+};
+
 // Upload API
 export const uploadAPI = {
   uploadFile: (file) => {

@@ -17,6 +17,8 @@ const Jobs = lazy(() => import('./pages/Jobs'));
 const JobForm = lazy(() => import('./pages/JobForm'));
 const StudentProgress = lazy(() => import('./pages/StudentProgress'));
 const Announcements = lazy(() => import('./pages/Announcements'));
+const InterviewAccess = lazy(() => import('./pages/InterviewAccess'));
+const InterviewReports = lazy(() => import('./pages/InterviewReports'));
 
 const Spinner = () => (
   <div className="min-h-screen bg-dark-bg flex items-center justify-center">
@@ -66,6 +68,9 @@ function AppRoutes() {
         <Route path="jobs/new" element={<Suspense fallback={<Spinner />}><JobForm /></Suspense>} />
         <Route path="jobs/:id/edit" element={<Suspense fallback={<Spinner />}><JobForm /></Suspense>} />
         <Route path="announcements" element={<Suspense fallback={<Spinner />}><Announcements /></Suspense>} />
+        <Route path="interviews/access" element={<Suspense fallback={<Spinner />}><InterviewAccess /></Suspense>} />
+        <Route path="interviews/reports" element={<Suspense fallback={<Spinner />}><InterviewReports /></Suspense>} />
+        <Route path="interviews/report/:id" element={<Suspense fallback={<Spinner />}><InterviewReports /></Suspense>} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
